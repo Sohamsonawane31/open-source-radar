@@ -1489,5 +1489,49 @@ class GuideChapterNavigationTests(unittest.TestCase):
                     )
 
 
+
+
+class TopicRssFeedTests(unittest.TestCase):
+    def test_topic_feed_urls_and_items(self):
+        fake_issue = {
+            "title": "Fix something",
+            "url": "https://github.com/owner/repo/issues/42",
+            "repo": "owner/repo",
+            "created": "2026-10-01T12:00:00+00:00",
+            "labels": ["good first issue"],
+        }
+        fake_repos = {
+            "owner/repo": {"stars": 120},
+        }
+        tree = radar._build_rss_tree(
+            title="DevOps",
+            slug="devops",
+            items=[fake_issue],
+            repositories=fake_repos,
+            generated_at="2026-10-02T00:00:00+00:00",
+            feed_url_prefix="topics/",
+            page_url_segment="by-topic",
+        )
+        channel = tree.find("channel")
+        self.assertIsNotNone(channel)
+
+        atom_link = channel.find(f"{{{radar.ATOM_NAMESPACE}}}link")
+        self.assertIsNotNone(atom_link)
+        self.assertTrue(atom_link.attrib["href"].endswith("feeds/topics/devops.xml"))
+        self.assertEqual(atom_link.attrib.get("rel"), "self")
+
+        channel_link = channel.find("link")
+        self.assertIsNotNone(channel_link)
+        self.assertEqual(
+            channel_link.text,
+            "https://github.com/TanbirRamim/open-source-radar/blob/main/issues/by-topic/devops.md",
+        )
+
+        item = channel.find("item")
+        self.assertIsNotNone(item)
+        self.assertEqual(item.find("title").text, "Fix something")
+        self.assertEqual(item.find("link").text, "https://github.com/owner/repo/issues/42")
+
+
 if __name__ == "__main__":
     unittest.main()
